@@ -23,11 +23,15 @@
 #define SIERRA_SUP_LIM     12
 #define SIERRA_INF_LIM     A3
 
+int valor_inicial_Z_down = 200;
 int delayTime_Y=90;//STEP 1/8
 int delayTime_X=30;//STEP 1/16
-int delayTime_Z_down=250;//STEP 1/8
 int delayTime_Z_up=50;//STEP 1/8
-unsigned long StartTime = millis();
+int delayTime_Z_down=valor_inicial_Z_down;//STEP 1/8
+int delayTime_Z_down_first = 250;
+int delayTime_Z_down_second = 250;
+int elapsed_time_first = 5000;
+int elapsed_time_second = 6000;
 char input[INPUT_SIZE + 1];
 char *valores [3];
 int contador = 0;
@@ -73,7 +77,16 @@ boolean SierraAbajo(int estado_sensor_inf){
   
   digitalWrite(Z_DIR, LOW);
   delay(500);
+  unsigned long start_time = millis();
   while(estado_sensor_inf == 0){
+    unsigned long current_time = millis();
+    unsigned long current_elapsed_time = current_time - start_time;
+    if(current_elapsed_time > elapsed_time_first){
+      delayTime_Z_down = delayTime_Z_down_first;
+    }
+    if(current_elapsed_time > elapsed_time_second){
+      delayTime_Z_down = delayTime_Z_down_second;
+    }
     AvanzaMotor(Z_STP,delayTime_Z_down);
     estado_sensor_inf = digitalRead(SIERRA_INF_LIM);
     if(Serial.available()){
@@ -82,6 +95,7 @@ boolean SierraAbajo(int estado_sensor_inf){
       break;
     }
   }
+  delayTime_Z_down = valor_inicial_Z_down;
   return paro_corte;
 }
 
@@ -265,6 +279,89 @@ void PruebaSistema(){
   }
 }
 
+void ObtenTiempoDeDescenso(int codigo_disipador){
+  
+  if(codigo_disipador == 1){ // 1 pieza de 2.8cm
+    delayTime_Z_down_first = 250;
+    delayTime_Z_down_second = 250;
+    elapsed_time_first = 5000;
+    elapsed_time_second = 6000;
+  }
+  else if(codigo_disipador == 2){ // 2 piezas embonadas de 2.8cm
+    delayTime_Z_down_first = 250;
+    delayTime_Z_down_second = 250;
+    elapsed_time_first = 5000;
+    elapsed_time_second = 6000;
+  }
+  else if(codigo_disipador == 3){ // 4 piezas embonadas de 2.8cm
+    delayTime_Z_down_first = 400;
+    delayTime_Z_down_second = 250;
+    elapsed_time_first = 4000;
+    elapsed_time_second = 8000;
+  }
+  else if(codigo_disipador == 4){ // 6 piezas embonadas de 2.8cm
+    delayTime_Z_down_first = 600;
+    delayTime_Z_down_second = 350;
+    elapsed_time_first = 4000;
+    elapsed_time_second = 8000;
+  }
+  else if(codigo_disipador == 5){ // 8 piezas embonadas de 2.8cm
+    delayTime_Z_down_first = 800;
+    delayTime_Z_down_second = 400;
+    elapsed_time_first = 3000;
+    elapsed_time_second = 16000;
+  }
+  else if(codigo_disipador == 6){ // 12 piezas embonadas de 2.8cm
+    delayTime_Z_down_first = 1000;
+    delayTime_Z_down_second = 500;
+    elapsed_time_first = 2800;
+    elapsed_time_second = 17000;
+  }
+  else if(codigo_disipador == 7){ // 1 pieza de 7.6cm
+    delayTime_Z_down_first = 400;
+    delayTime_Z_down_second = 300;
+    elapsed_time_first = 3200;
+    elapsed_time_second = 8000;
+  }
+  else if(codigo_disipador == 8){ // 2 piezas embonadas de 7.6cm
+    delayTime_Z_down_first = 400;
+    delayTime_Z_down_second = 300;
+    elapsed_time_first = 3000;
+    elapsed_time_second = 8000;
+  }
+  else if(codigo_disipador == 9){ // 4 piezas embonadas de 7.6cm
+    delayTime_Z_down_first = 1000;
+    delayTime_Z_down_second = 400;
+    elapsed_time_first = 2900;
+    elapsed_time_second = 21000;
+  }
+  else if(codigo_disipador == 10){ //1 pieza de 8.7cm
+    delayTime_Z_down_first = 600;
+    delayTime_Z_down_second = 350;
+    elapsed_time_first = 2000;
+    elapsed_time_second = 12000;
+  }
+  else if(codigo_disipador == 11){ //2 piezas en paralelo de 8.7cm
+    delayTime_Z_down_first = 1000;
+    delayTime_Z_down_second = 350;
+    elapsed_time_first = 1800;
+    elapsed_time_second = 30000;
+  }
+  else if(codigo_disipador == 12){ // 1 pieza de 10cm
+    delayTime_Z_down_first = 1000;
+    delayTime_Z_down_second = 500;
+    elapsed_time_first = 2900;
+    elapsed_time_second = 16000;
+  }
+  else{
+    delayTime_Z_down_first = 600; // Igual que el de 8.7cm
+    delayTime_Z_down_second = 350;
+    elapsed_time_first = 2000;
+    elapsed_time_second = 12000;
+  }
+  return;
+}
+
 void setup(){
 
   pinMode(X_DIR, OUTPUT); 
@@ -393,13 +490,13 @@ void loop(){
             contador_cortes=0;
             break;
           }
-          delay(500);
+          delay(1);
           parar = step(0,Y_DIR, Y_STP, stps_y);
           if(parar){
             contador_cortes=0;
             break;
           }
-          delay(500);
+          delay(100);
           parar = CorteSierra();
           if(parar){
             contador_cortes=0;
@@ -410,7 +507,7 @@ void loop(){
             contador_cortes=0;
             break;
           }
-          delay(500);
+          delay(100);
         }
         contador_cortes = 0;
         num_cortes = 0;
@@ -421,7 +518,7 @@ void loop(){
       ToggleSierra();
     }
     else if (codigo_programa == 7) {
-      delayTime_Z_down=distancia;
+      ObtenTiempoDeDescenso(int(distancia));
     }
     else if (codigo_programa == 8) {
       PruebaSistema();
